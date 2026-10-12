@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#16324f">
+<title>SPD Instrument Spelling Bee</title>
+<style>
+:root{--navy:#16324f;--blue:#245b83;--gold:#f2bd4b;--paper:#f4f7fb;--ink:#182433;--muted:#64748b;--green:#16794b;--red:#b42318}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+header{background:var(--navy);color:white;padding:24px 18px;text-align:center;border-bottom:5px solid var(--gold)}
+header .bee{font-size:2rem} header h1{font-size:clamp(1.45rem,4vw,2.2rem);margin:4px 0} header p{margin:0;color:#d9e5f0}
+main{max-width:760px;margin:24px auto;padding:0 14px 38px}
+.card{background:white;border:1px solid #dbe3ec;border-radius:18px;padding:clamp(18px,4vw,30px);box-shadow:0 8px 24px #16324f0d}
+.hidden{display:none!important}
+h2{margin-top:0;color:var(--navy)}
+label{display:block;font-weight:650;margin:16px 0 7px}
+input[type=text]{width:100%;padding:13px 14px;border:1px solid #b9c7d5;border-radius:10px;font:inherit}
+button{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:10px;padding:12px 16px}
+button:focus-visible,input:focus-visible{outline:3px solid #f2bd4b;outline-offset:2px}
+.primary{background:var(--blue);color:white}.secondary{background:#e8eef5;color:var(--navy)}.gold{background:var(--gold);color:#302300}
+button:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.small{font-size:.92rem;color:var(--muted)}
+.progressrow{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:.95rem;margin-bottom:10px}
+.progress{height:8px;background:#e7edf4;border-radius:999px;overflow:hidden;margin-bottom:22px}.bar{height:100%;background:var(--gold);width:0;transition:width .2s}
+.question{font-size:1.18rem;font-weight:750;margin:0 0 18px}
+.options{display:grid;gap:10px}
+.option{display:flex;align-items:center;text-align:left;width:100%;gap:12px;background:#f8fafc;border:1px solid #d8e1ea;color:var(--ink);padding:14px;border-radius:12px}
+.option .letter{display:inline-grid;place-items:center;flex:0 0 30px;height:30px;border-radius:8px;background:#e4ebf3;color:var(--navy);font-weight:800}
+.option:hover:not(:disabled){border-color:var(--blue);background:#f0f6fb}
+.option.correct{border-color:#7bc7a2;background:#edfbf3}.option.wrong{border-color:#e6a09a;background:#fff3f2}
+.feedback{margin-top:16px;padding:13px 15px;border-radius:10px;background:#f2f6fa}
+.feedback.good{background:#edfbf3;color:#125b39}.feedback.bad{background:#fff3f2;color:#8d1e16}
+.scorebox{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0}
+.metric{background:#f3f7fb;border-radius:12px;padding:14px;text-align:center}.metric strong{display:block;font-size:1.5rem;color:var(--navy)}.metric span{font-size:.85rem;color:var(--muted)}
+.certificate{border:3px double #c99a2e;border-radius:12px;padding:24px;text-align:center;background:#fffdf7;margin:20px 0}
+.certificate .certtitle{font-size:1.25rem;font-weight:850;letter-spacing:.07em;color:var(--navy)}.certificate .name{font-size:clamp(1.5rem,5vw,2.2rem);font-weight:850;color:var(--blue);overflow-wrap:anywhere}.certificate .score{font-size:1.8rem;font-weight:850;color:var(--green)}
+footer{text-align:center;color:var(--muted);font-size:.85rem;padding:0 15px 24px}
+@media(max-width:460px){.scorebox{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:1/-1}.actions button{flex:1 1 100%}}
+@media print{body{background:white}header,footer,.no-print{display:none!important}main{margin:0;max-width:none;padding:0}.card{box-shadow:none;border:0}.certificate{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bee" aria-hidden="true">🐝</div>
+  <h1>SPD Instrument Spelling Bee</h1>
+  <p>Build your vocabulary. Spell with confidence.</p>
+</header>
+<main>
+  <section id="welcome" class="card">
+    <h2>Ready to play?</h2>
+    <p>Answer 10 multiple-choice spelling questions featuring challenging instrument names. Your score and personalized certificate are generated on this device.</p>
+    <label for="playerName">Participant's name</label>
+    <input id="playerName" type="text" maxlength="80" autocomplete="name" placeholder="Enter your full name">
+    <p class="small">No CSV upload, account, or sign-in required.</p>
+    <div class="actions"><button id="startBtn" class="primary">Start Quiz</button></div>
+  </section>
+
+  <section id="quiz" class="card hidden" aria-live="polite">
+    <div class="progressrow"><span id="questionCounter">Question 1 of 10</span><span id="liveScore">Score: 0</span></div>
+    <div class="progress"><div id="progressBar" class="bar"></div></div>
+    <p id="questionText" class="question"></p>
+    <div id="options" class="options"></div>
+    <div id="feedback" class="feedback hidden" role="status"></div>
+    <div class="actions"><button id="nextBtn" class="primary" disabled>Next Question</button></div>
+  </section>
+
+  <section id="results" class="card hidden">
+    <h2>Quiz complete!</h2>
+    <p id="congrats"></p>
+    <div class="scorebox">
+      <div class="metric"><strong id="correctMetric">0/10</strong><span>Correct answers</span></div>
+      <div class="metric"><strong id="percentMetric">0%</strong><span>Final score</span></div>
+      <div class="metric"><strong>10</strong><span>Questions</span></div>
+    </div>
+    <div id="certificate" class="certificate">
+      <div style="font-size:2rem">🐝</div>
+      <div class="certtitle">SPD INSTRUMENT SPELLING BEE</div>
+      <p>Certificate of Achievement</p>
+      <p>This certificate is presented to</p>
+      <div id="certName" class="name">Participant</div>
+      <p>for completing the SPD Instrument Spelling Bee.</p>
+      <div id="certScore" class="score">0/10 — 0%</div>
+      <p id="certDate"></p>
+      <p><em>Keep learning. Keep improving. Keep achieving!</em></p>
+    </div>
+    <p class="small">Your name and score are not uploaded or stored on a server. Use Share Result on a supported device, or download the PDF and attach it in Teams or another app.</p>
+    <div class="actions no-print">
+      <button id="downloadBtn" class="primary">📄 Download PDF</button>
+      <button id="shareBtn" class="gold">📤 Share Result</button>
+      <button id="reviewBtn" class="secondary">Review Answers</button>
+      <button id="againBtn" class="secondary">Play Again</button>
+    </div>
+    <div id="review" class="hidden"></div>
+  </section>
+</main>
+<footer>Free static website · Runs in your browser · No account required</footer>
+<script>
+const QUESTIONS = [
+ {word:"Anspach", prompt:"Which is the correct spelling of the instrument name pronounced approximately “AN-spock”?", options:["Anspachh","Anspach","Anspack","Ansphach"], why:"The saved product-list spelling is Anspach."},
+ {word:"Intraligamental", prompt:"Which spelling matches the saved instrument term?", options:["Intraligimental","Intraligamental","Intraligamintal","Intraligamentel"], why:"The saved product-list spelling is Intraligamental."},
+ {word:"VariAngleLock", prompt:"Which version correctly spells the product name with the words run together and internal capitals?", options:["VaryAngleLock","VariAngellock","VariAngleLock","VariAngleLok"], why:"The saved product-list spelling is VariAngleLock."},
+ {word:"Goulet-Simpson", prompt:"Which spelling correctly preserves the hyphenated instrument name?", options:["Goulette-Simpson","Goulet Simpson","Goulet-Simpson","Goulet-Simpsen"], why:"The saved product-list spelling is Goulet-Simpson, including the hyphen."},
+ {word:"Jordan-Vernick", prompt:"Which spelling matches the saved hyphenated name?", options:["Jordon-Vernick","Jordan-Vernick","Jordan-Vernik","Jordan-Vernickk"], why:"The saved product-list spelling is Jordan-Vernick."},
+ {word:"Whirley Bird", prompt:"Which spelling and spacing match the saved product name?", options:["Whirly Bird","WhirleyBird","Whirley Bird","Whirley Byrd"], why:"The saved product-list spelling is Whirley Bird, with a space."},
+ {word:"Tenaculum", prompt:"Which spelling is the one found in the instrument list?", options:["Teneculum","Tenaculum","Tenacullum","Tenaculumh"], why:"The saved product-list spelling is Tenaculum."},
+ {word:"Osteotome", prompt:"Which spelling correctly names the bone-cutting instrument in the saved list?", options:["Osteotomee","Osteotomie","Osteotome","Osteotomey"], why:"The saved product-list spelling is Osteotome."},
+ {word:"Leksell", prompt:"Which spelling matches the saved instrument name?", options:["Lexsell","Lekselle","Leksell","Leksel"], why:"The saved product-list spelling is Leksell."},
+ {word:"Weitlaner", prompt:"Which is the correct spelling of the final instrument name in this round?", options:["Wietlaner","Weitlander","Weitlaner","Weitlanar"], why:"The saved product-list spelling is Weitlaner."}
+];
+const $ = id => document.getElementById(id);
+let player="", order=[], current=0, score=0, answers=[], completedAt=null;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function show(id){$(id).classList.remove("hidden")}
+function hide(id){$(id).classList.add("hidden")}
+$("startBtn").addEventListener("click",()=>{
+ player=$("playerName").value.trim();
+ if(!player){$("playerName").focus();$("playerName").setCustomValidity("Please enter the participant's name.");$("playerName").reportValidity();$("playerName").setCustomValidity("");return;}
+ order=shuffle(QUESTIONS.map((_,i)=>i));current=0;score=0;answers=[];completedAt=null;
+ hide("welcome");hide("results");show("quiz");renderQuestion();
+});
+$("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")$("startBtn").click()});
+function renderQuestion(){
+ const q=QUESTIONS[order[current]];
+ $("questionCounter").textContent=`Question ${current+1} of ${order.length}`;
+ $("liveScore").textContent=`Score: ${score}`;
+ $("progressBar").style.width=`${current/order.length*100}%`;
+ $("questionText").textContent=q.prompt;
+ $("options").replaceChildren();hide("feedback");$("nextBtn").disabled=true;
+ $("nextBtn").textContent=current===order.length-1?"See Results":"Next Question";
+ shuffle(q.options.map((label,i)=>({label,originalIndex:i}))).forEach((opt,idx)=>{
+   const b=document.createElement("button");b.className="option";b.type="button";
+   const letter=document.createElement("span");letter.className="letter";letter.textContent=String.fromCharCode(65+idx);
+   const txt=document.createElement("span");txt.textContent=opt.label;
+   b.append(letter,txt);b.addEventListener("click",()=>chooseAnswer(b,opt.label,q));$("options").append(b);
+ });
+}
+function chooseAnswer(button,selected,q){
+ if(answers[current])return;
+ const correct=selected===q.word;
+ answers[current]={word:q.word,selected,correct,why:q.why};
+ if(correct)score++;
+ [...$("options").children].forEach(b=>{b.disabled=true;const label=b.lastChild.textContent;if(label===q.word)b.classList.add("correct");else if(label===selected)b.classList.add("wrong")});
+ $("feedback").textContent=(correct?"Correct! ":"Not quite. ")+q.why;
+ $("feedback").className="feedback "+(correct?"good":"bad");show("feedback");
+ $("liveScore").textContent=`Score: ${score}`;$("nextBtn").disabled=false;
+}
+$("nextBtn").addEventListener("click",()=>{if(current<order.length-1){current++;renderQuestion()}else finish()});
+function finish(){
+ completedAt=new Date();hide("quiz");show("results");
+ const pct=Math.round(score/QUESTIONS.length*100);
+ $("congrats").textContent=`Well done, ${player}! Here is your result.`;
+ $("correctMetric").textContent=`${score}/${QUESTIONS.length}`;$("percentMetric").textContent=`${pct}%`;
+ $("certName").textContent=player;$("certScore").textContent=`${score}/${QUESTIONS.length} — ${pct}%`;
+ $("certDate").textContent="Date completed: "+completedAt.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+ $("review").replaceChildren();hide("review");
+}
+function pdfEscape(s){return String(s).normalize("NFKD").replace(/[^\x20-\x7E]/g,"").replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");}
+function makePdfBytes(){
+ const pct=Math.round(score/QUESTIONS.length*100);
+ const date=completedAt?completedAt.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):new Date().toLocaleDateString("en-US");
+ const lines=[
+  {t:"SPD INSTRUMENT SPELLING BEE",s:20,y:710,c:"0.09 0.20 0.31"},
+  {t:"CERTIFICATE OF ACHIEVEMENT",s:13,y:675,c:"0.14 0.36 0.51"},
+  {t:"This certificate is presented to",s:12,y:620,c:"0.20 0.24 0.29"},
+  {t:player,s:25,y:575,c:"0.14 0.36 0.51"},
+  {t:"for completing the SPD Instrument Spelling Bee.",s:12,y:530,c:"0.20 0.24 0.29"},
+  {t:`Final score: ${score}/${QUESTIONS.length} (${pct}%)`,s:20,y:470,c:"0.09 0.42 0.27"},
+  {t:`Questions answered: ${QUESTIONS.length}`,s:12,y:430,c:"0.20 0.24 0.29"},
+  {t:`Date completed: ${date}`,s:12,y:395,c:"0.20 0.24 0.29"},
+  {t:"Keep learning. Keep improving. Keep achieving!",s:12,y:325,c:"0.20 0.24 0.29"},
+  {t:"SPD Instrument Spelling Bee",s:9,y:90,c:"0.39 0.45 0.53"}
+ ];
+ let stream="q\n0.78 0.59 0.18 RG\n4 w\n45 260 522 510 re S\n1 w\n55 270 502 490 re S\n";
+ for(const l of lines){stream+=`${l.c} rg\nBT /F1 ${l.s} Tf 1 0 0 1 ${Math.max(55,306-(pdfEscape(l.t).length*l.s*0.24))} ${l.y} Tm (${pdfEscape(l.t)}) Tj ET\n`;}
+ stream+="Q";
+ const objects=[];
+ objects.push("<< /Type /Catalog /Pages 2 0 R >>");
+ objects.push("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+ objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>");
+ objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+ objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+ let pdf="%PDF-1.4\n%SPD Spelling Bee\n", offsets=[0];
+ for(let i=0;i<objects.length;i++){offsets.push(pdf.length);pdf+=`${i+1} 0 obj\n${objects[i]}\nendobj\n`;}
+ const xref=pdf.length;pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+ for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+ pdf+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+ return new Blob([pdf],{type:"application/pdf"});
+}
+function pdfFilename(){return "SPD-Spelling-Bee-"+player.trim().replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"")+".pdf";}
+$("downloadBtn").addEventListener("click",()=>{const blob=makePdfBytes();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=pdfFilename();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)});
+$("shareBtn").addEventListener("click",async()=>{
+ const blob=makePdfBytes(),file=new File([blob],pdfFilename(),{type:"application/pdf"});
+ try{
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){await navigator.share({title:"SPD Instrument Spelling Bee Result",text:`${player} scored ${score}/10 (${Math.round(score/10*100)}%).`,files:[file]});}
+  else if(navigator.share){await navigator.share({title:"SPD Instrument Spelling Bee Result",text:`${player} scored ${score}/10 (${Math.round(score/10*100)}%). Download the PDF from this page to share the certificate.`});alert("Your device shared the result text. To share the PDF, tap Download PDF and attach it in Teams or another app.");}
+  else {alert("PDF sharing is not supported in this browser. Your PDF will be downloaded so you can attach it in Teams or another app.");$("downloadBtn").click();}
+ }catch(e){if(e.name!=="AbortError")alert("Sharing did not complete. Please use Download PDF, then attach the file in Teams or another app.");}
+});
+$("reviewBtn").addEventListener("click",()=>{
+ const box=$("review");box.replaceChildren();
+ const title=document.createElement("h3");title.textContent="Answer review";box.append(title);
+ answers.forEach((a,i)=>{const p=document.createElement("p");p.textContent=`${i+1}. ${a.word} — Your answer: ${a.selected}. ${a.correct?"Correct":"Incorrect"}.`;box.append(p)});
+ show("review");box.scrollIntoView({behavior:"smooth",block:"start"});
+});
+$("againBtn").addEventListener("click",()=>{hide("results");show("welcome");$("playerName").value=player;$("playerName").focus()});
+</script>
+</body>
+</html>
