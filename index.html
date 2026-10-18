@@ -64,6 +64,7 @@ footer{text-align:center;color:var(--muted);font-size:.85rem;padding:0 15px 24px
     <p id="questionText" class="question"></p>
     <div id="options" class="options"></div>
     <div id="feedback" class="feedback hidden" role="status"></div>
+    <p id="autoAdvance" class="small hidden" aria-live="polite"></p>
     <div class="actions"><button id="nextBtn" class="primary" disabled>Next Question</button></div>
   </section>
 
@@ -111,7 +112,7 @@ const QUESTIONS = [
  {word:"Weitlaner", prompt:"Which is the correct spelling of the final instrument name in this round?", options:["Wietlaner","Weitlander","Weitlaner","Weitlanar"], why:"The saved product-list spelling is Weitlaner."}
 ];
 const $ = id => document.getElementById(id);
-let player="", order=[], current=0, score=0, answers=[], completedAt=null;
+let player="", order=[], current=0, score=0, answers=[], completedAt=null, feedbackTimer=null, countdownTimer=null;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function show(id){$(id).classList.remove("hidden")}
 function hide(id){$(id).classList.add("hidden")}
@@ -122,7 +123,9 @@ $("startBtn").addEventListener("click",()=>{
  hide("welcome");hide("results");show("quiz");renderQuestion();
 });
 $("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")$("startBtn").click()});
+function clearFeedbackTimers(){if(feedbackTimer!==null){clearTimeout(feedbackTimer);feedbackTimer=null;}if(countdownTimer!==null){clearInterval(countdownTimer);countdownTimer=null;}hide("autoAdvance");}
 function renderQuestion(){
+ clearFeedbackTimers();
  const q=QUESTIONS[order[current]];
  $("questionCounter").textContent=`Question ${current+1} of ${order.length}`;
  $("liveScore").textContent=`Score: ${score}`;
@@ -137,18 +140,29 @@ function renderQuestion(){
    b.append(letter,txt);b.addEventListener("click",()=>chooseAnswer(b,opt.label,q));$("options").append(b);
  });
 }
+function goNext(){
+ clearFeedbackTimers();
+ if(current<order.length-1){current++;renderQuestion()}else finish();
+}
 function chooseAnswer(button,selected,q){
  if(answers[current])return;
  const correct=selected===q.word;
  answers[current]={word:q.word,selected,correct,why:q.why};
  if(correct)score++;
  [...$("options").children].forEach(b=>{b.disabled=true;const label=b.lastChild.textContent;if(label===q.word)b.classList.add("correct");else if(label===selected)b.classList.add("wrong")});
- $("feedback").textContent=(correct?"Correct! ":"Not quite. ")+q.why;
+ $("feedback").textContent="Correct spelling: "+q.word+". "+q.why;
  $("feedback").className="feedback "+(correct?"good":"bad");show("feedback");
  $("liveScore").textContent=`Score: ${score}`;$("nextBtn").disabled=false;
+ $("nextBtn").textContent=current===order.length-1?"See Results (10)":"Next Question (10)";
+ let remaining=10;
+ $("autoAdvance").textContent=`Correct spelling stays visible for ${remaining} seconds, then the quiz advances automatically.`;
+ show("autoAdvance");
+ countdownTimer=setInterval(()=>{remaining--;if(remaining>0){$("nextBtn").textContent=current===order.length-1?`See Results (${remaining})`:`Next Question (${remaining})`;$("autoAdvance").textContent=`Correct spelling stays visible for ${remaining} seconds, then the quiz advances automatically.`;}else{$("autoAdvance").textContent="Moving on…";clearInterval(countdownTimer);countdownTimer=null;}},1000);
+ feedbackTimer=setTimeout(goNext,10000);
 }
-$("nextBtn").addEventListener("click",()=>{if(current<order.length-1){current++;renderQuestion()}else finish()});
+$("nextBtn").addEventListener("click",goNext);
 function finish(){
+ clearFeedbackTimers();
  completedAt=new Date();hide("quiz");show("results");
  const pct=Math.round(score/QUESTIONS.length*100);
  $("congrats").textContent=`Well done, ${player}! Here is your result.`;
@@ -205,7 +219,7 @@ $("reviewBtn").addEventListener("click",()=>{
  answers.forEach((a,i)=>{const p=document.createElement("p");p.textContent=`${i+1}. ${a.word} — Your answer: ${a.selected}. ${a.correct?"Correct":"Incorrect"}.`;box.append(p)});
  show("review");box.scrollIntoView({behavior:"smooth",block:"start"});
 });
-$("againBtn").addEventListener("click",()=>{hide("results");show("welcome");$("playerName").value=player;$("playerName").focus()});
+$("againBtn").addEventListener("click",()=>{clearFeedbackTimers();hide("results");show("welcome");$("playerName").value=player;$("playerName").focus()});
 </script>
 </body>
 </html>
