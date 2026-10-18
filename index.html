@@ -153,11 +153,11 @@ function chooseAnswer(button,selected,q){
  $("feedback").textContent="Correct spelling: "+q.word+". "+q.why;
  $("feedback").className="feedback "+(correct?"good":"bad");show("feedback");
  $("liveScore").textContent=`Score: ${score}`;$("nextBtn").disabled=false;
- $("nextBtn").textContent=current===order.length-1?"See Results (10)":"Next Question (10)";
+ $("nextBtn").textContent=current===order.length-1?"Results in 10…":"Next word in 10…";
  let remaining=10;
  $("autoAdvance").textContent=`Correct spelling stays visible for ${remaining} seconds, then the quiz advances automatically.`;
  show("autoAdvance");
- countdownTimer=setInterval(()=>{remaining--;if(remaining>0){$("nextBtn").textContent=current===order.length-1?`See Results (${remaining})`:`Next Question (${remaining})`;$("autoAdvance").textContent=`Correct spelling stays visible for ${remaining} seconds, then the quiz advances automatically.`;}else{$("autoAdvance").textContent="Moving on…";clearInterval(countdownTimer);countdownTimer=null;}},1000);
+ countdownTimer=setInterval(()=>{remaining--;if(remaining>0){$("nextBtn").textContent=current===order.length-1?`Results in ${remaining}…`:`Next word in ${remaining}…`;$("autoAdvance").textContent=`Correct spelling stays visible for ${remaining} seconds, then the quiz advances automatically.`;}else{$("autoAdvance").textContent="Moving on…";clearInterval(countdownTimer);countdownTimer=null;}},1000);
  feedbackTimer=setTimeout(goNext,10000);
 }
 $("nextBtn").addEventListener("click",goNext);
